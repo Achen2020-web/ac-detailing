@@ -1,18 +1,13 @@
-// src/app/layout.tsx
-import "./globals.css";
-
-export const metadata = {
-  title: "AC Detailing & Cleaning",
-  description: "Premium mobile detailing in Minneapolis — interior, exterior, coatings.",
-};
+import "./globals.css"
+import { Analytics } from "@vercel/analytics/react"
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      {/* Add suppressHydrationWarning HERE too */}
-      <body className="antialiased" suppressHydrationWarning>
+      <body className="antialiased">
         {children}
+        <Analytics /> {/* 👈 Add this here */}
       </body>
     </html>
-  );
+  )
 }
