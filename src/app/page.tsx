@@ -15,8 +15,8 @@ const PALETTE = {
 };
 
 /* ---------------- Smart image with next/image + graceful fallbacks ----------------
-   - The wrapper div receives your className (sets size & fit classes)
-   - next/image uses `fill` for optimization
+   - Wrapper gets your className (sets size & fit classes)
+   - Uses next/image (fill) for optimization
    - Tries multiple sources; if one fails, advances to the next
 ----------------------------------------------------------------------------- */
 function SmartImg({
@@ -53,7 +53,6 @@ function SmartImg({
         fill
         sizes="100vw"
         className={
-          // Keep whatever fit you passed (object-cover / object-contain)
           (className || "").includes("object-contain")
             ? "object-contain"
             : "object-cover"
@@ -62,7 +61,6 @@ function SmartImg({
           if (idx < sources.length - 1) setIdx(idx + 1);
           else setFailedAll(true);
         }}
-        // For large hero images we don’t need blur placeholders
         priority={false}
       />
     </div>
@@ -70,7 +68,13 @@ function SmartImg({
 }
 
 /* ---------------- Small motion helper ---------------- */
-function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+function Reveal({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, amount: 0.18 });
   return (
@@ -83,6 +87,118 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
         {children}
       </motion.div>
     </div>
+  );
+}
+
+/* ---------------- HERO SLIDESHOW ---------------- */
+const heroSlides: string[][] = [
+  ["/soap-sunset.jpeg", "/soap-sunset.jpg"],
+  ["/polish-black-portrait.jpeg", "/polish-black-portrait.jpg"],
+  ["/hero-polish.jpeg", "/hero-polish.jpg"],
+];
+
+function HeroSlideshow({
+  onSelectPackage,
+}: {
+  onSelectPackage: (pkg: string) => void;
+}) {
+  const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => setI((v) => (v + 1) % heroSlides.length), 5000);
+    return () => clearInterval(t);
+  }, [paused]);
+
+  const go = (n: number) =>
+    setI((prev) => (prev + n + heroSlides.length) % heroSlides.length);
+
+  return (
+    <section
+      className="relative h-[92vh] w-full isolate overflow-hidden select-none"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <AnimatePresence initial={false} mode="wait">
+        <motion.div
+          key={i}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.0 }}
+          className="absolute inset-0"
+        >
+          <SmartImg
+            sources={heroSlides[i]}
+            alt="Detailing showcase"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="absolute inset-0 bg-black/45" />
+
+      <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col items-start justify-center px-6">
+        <h1 className="max-w-3xl text-4xl md:text-6xl font-extrabold tracking-tight leading-[0.95]">
+          VEHICLE DETAILING
+          <br /> IN MINNEAPOLIS
+        </h1>
+        <p className="mt-5 max-w-xl text-white/70">
+          Professional interior restoration, exterior detailing, and lasting
+          protection — delivered right to your driveway.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-4">
+          <a
+            href="#booking"
+            onClick={() => onSelectPackage("General Booking")}
+            className="rounded-md px-6 py-3 text-sm font-medium bg-white text-black ring-1 ring-inset ring-white/20 hover:opacity-90 transition"
+          >
+            Book Today
+          </a>
+          <a
+            href="#services"
+            className="rounded-md px-6 py-3 text-sm font-medium border border-white/30 hover:bg-white hover:text-black transition"
+          >
+            Explore Services
+          </a>
+        </div>
+      </div>
+
+      {/* Arrows */}
+      <button
+        aria-label="Previous slide"
+        onClick={() => go(-1)}
+        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 hover:bg-black/60 p-3 text-white"
+      >
+        ‹
+      </button>
+      <button
+        aria-label="Next slide"
+        onClick={() => go(1)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 hover:bg-black/60 p-3 text-white"
+      >
+        ›
+      </button>
+
+      {/* Dots */}
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
+        {heroSlides.map((_, idx) => {
+          const active = idx === i;
+          return (
+            <button
+              key={idx}
+              aria-label={`Go to slide ${idx + 1}`}
+              onClick={() => setI(idx)}
+              className={[
+                "h-2 w-2 rounded-full transition",
+                active ? "bg-white" : "bg-white/40 hover:bg-white/70",
+              ].join(" ")}
+            />
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -399,15 +515,28 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
    ========================================================= */
 export default function Home() {
   // Inquiry form (with honeypot)
-  const [inq, setInq] = useState({ name: "", email: "", phone: "", vehicle: "", message: "", company: "" });
+  const [inq, setInq] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    vehicle: "",
+    message: "",
+    company: "",
+  });
   const [inqBusy, setInqBusy] = useState(false);
   const [inqOK, setInqOK] = useState(false);
   const [inqErr, setInqErr] = useState<string | null>(null);
 
   // Booking form (with honeypot)
   const [bk, setBk] = useState({
-    name: "", email: "", phone: "", vehicle: "",
-    package: "Interior + Exterior", date: "", time: "", company: "",
+    name: "",
+    email: "",
+    phone: "",
+    vehicle: "",
+    package: "Interior + Exterior",
+    date: "",
+    time: "",
+    company: "",
   });
   const [bkBusy, setBkBusy] = useState(false);
   const [bkOK, setBkOK] = useState(false);
@@ -431,41 +560,61 @@ export default function Home() {
     e.preventDefault();
     if (inq.company) return; // honeypot
     if (!validEmail(inq.email)) return setInqErr("Please enter a valid email.");
-    setInqBusy(true); setInqErr(null);
-    const payload = { name: inq.name, email: inq.email, phone: inq.phone, vehicle: inq.vehicle, message: inq.message };
+    setInqBusy(true);
+    setInqErr(null);
+    const payload = {
+      name: inq.name,
+      email: inq.email,
+      phone: inq.phone,
+      vehicle: inq.vehicle,
+      message: inq.message,
+    };
     const { error } = await supabase.from("customer_inquiries").insert([payload]);
     setInqBusy(false);
     if (error) return setInqErr(error.message);
     setInqOK(true);
-    setInq({ name: "", email: "", phone: "", vehicle: "", message: "", company: "" });
+    setInq({
+      name: "",
+      email: "",
+      phone: "",
+      vehicle: "",
+      message: "",
+      company: "",
+    });
   }
 
   async function submitBooking(e: React.FormEvent) {
     e.preventDefault();
     if (bk.company) return; // honeypot
     if (!validEmail(bk.email)) return setBkErr("Please enter a valid email.");
-    setBkBusy(true); setBkErr(null);
-    const payload = { name: bk.name, email: bk.email, phone: bk.phone, vehicle: bk.vehicle, package: bk.package, date: bk.date, time: bk.time };
+    setBkBusy(true);
+    setBkErr(null);
+    const payload = {
+      name: bk.name,
+      email: bk.email,
+      phone: bk.phone,
+      vehicle: bk.vehicle,
+      package: bk.package,
+      date: bk.date,
+      time: bk.time,
+    };
     const { error } = await supabase.from("bookings").insert([payload]);
     setBkBusy(false);
     if (error) return setBkErr(error.message);
     setBkOK(true);
-    setBk({ name: "", email: "", phone: "", vehicle: "", package: "Interior + Exterior", date: "", time: "", company: "" });
+    setBk({
+      name: "",
+      email: "",
+      phone: "",
+      vehicle: "",
+      package: "Interior + Exterior",
+      date: "",
+      time: "",
+      company: "",
+    });
   }
 
-  /* Hero slideshow */
-  const slides = [
-    ["/hero-polish.jpg", "/hero-polish.jpeg"],
-    ["/soap-sunset.jpg", "/soap-sunset.jpeg"],
-    ["/wipe-blue-cloth.jpg", "/wipe-blue-cloth.jpeg"],
-  ];
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % slides.length), 6000);
-    return () => clearInterval(t);
-  }, [slides.length]);
-
-  /* Posters */
+  /* Posters (pricing) */
   const posters = [
     { srcs: ["/referral-pricing.png"], alt: "Referral Program" },
     { srcs: ["/ceramic-pricing.png"], alt: "Ceramic pricing" },
@@ -507,48 +656,23 @@ export default function Home() {
             <a href="#reviews" className="hover:opacity-70">Reviews</a>
             <a href="#contact" className="hover:opacity-70">Contact</a>
           </nav>
-          <a href="#booking" className="rounded-md px-4 py-2 text-sm border border-white hover:bg-white hover:text-black transition">Book Now</a>
+          <a
+            href="#booking"
+            className="rounded-md px-4 py-2 text-sm border border-white hover:bg-white hover:text-black transition"
+          >
+            Book Now
+          </a>
         </div>
       </header>
 
-      {/* HERO (full image) */}
-      <section className="relative h-[92vh] w-full isolate overflow-hidden">
-        <AnimatePresence initial={false} mode="wait">
-          <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
-            <SmartImg
-              sources={slides[i]}
-              alt="Detailing showcase"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          </motion.div>
-        </AnimatePresence>
-        <div className="absolute inset-0 bg-black/45" />
-        <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col items-start justify-center px-6">
-          <h1 className="max-w-3xl text-4xl md:text-6xl font-extrabold tracking-tight leading-[0.95]">
-            VEHICLE DETAILING 
-            <br /> IN MINNEAPOLIS 
-          </h1>
-          <p className="mt-5 max-w-xl text-white/70">
-            Professional interior restoration, exterior detailing, and lasting protection — delivered right to your driveway.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href="#booking"
-              onClick={() => handleSelectPackage("General Booking")}
-              className="rounded-md px-6 py-3 text-sm font-medium bg-white text-black ring-1 ring-inset ring-white/20 hover:opacity-90 transition"
-            >
-              Book Today
-            </a>
-            <a href="#services" className="rounded-md px-6 py-3 text-sm font-medium border border-white/30 hover:bg-white hover:text-black transition">
-              Explore Services
-            </a>
-          </div>
-        </div>
-      </section>
+      {/* HERO */}
+      <HeroSlideshow onSelectPackage={handleSelectPackage} />
 
       {/* SERVICES */}
       <section id="services" className="mx-auto max-w-6xl px-6 py-16">
-        <Reveal><h2 className="text-2xl font-semibold">Services</h2></Reveal>
+        <Reveal>
+          <h2 className="text-2xl font-semibold">Services</h2>
+        </Reveal>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {[
             { t: "Express Wash", d: "Foam contact wash, wheels, windows, quick interior tidy." },
@@ -573,21 +697,22 @@ export default function Home() {
 
       {/* POSTERS */}
       <section id="pricing" className="px-0 py-16">
-        <Reveal><h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Pricing </h2></Reveal>
+        <Reveal>
+          <h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Pricing </h2>
+        </Reveal>
         <div className="mt-8 overflow-x-auto snap-x snap-mandatory">
           <div className="flex gap-6 px-6">
-            {[
-              { srcs: ["/referral-pricing.png"], alt: "Referral Program" },
-              { srcs: ["/ceramic-pricing.png"], alt: "Ceramic pricing" },
-              { srcs: ["/interior-pricing.png"], alt: "Interior pricing" },
-              { srcs: ["/full-pricing.png"], alt: "Full pricing" },
-            ].map((img) => (
+            {posters.map((img) => (
               <div
                 key={img.srcs[0]}
                 className="snap-center shrink-0 rounded-2xl border border-white/10 bg-white/5 backdrop-blur"
                 style={{ width: "min(92vw, 950px)" }}
               >
-                <SmartImg sources={img.srcs} alt={img.alt} className="h-[86vh] w-full object-contain p-4" />
+                <SmartImg
+                  sources={img.srcs}
+                  alt={img.alt}
+                  className="h-[86vh] w-full object-contain p-4"
+                />
               </div>
             ))}
           </div>
@@ -601,15 +726,22 @@ export default function Home() {
             Customer Results
           </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {[
               { srcs: ["/before-after-seat.jpg", "/before-after-seat.jpeg"], caption: "Interior Seat Restoration" },
               { srcs: ["/before-after-mats.jpg", "/before-after-mats.jpeg"], caption: "Floor Mat Deep Clean" },
               { srcs: ["/before-after-door.jpg", "/before-after-door.jpeg"], caption: "Door Panel Refresh" },
               { srcs: ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"], caption: "Full Trunk Cleanout" },
             ].map((card) => (
-              <div key={card.caption} className="bg-neutral-900 rounded-2xl shadow-lg overflow-hidden border border-white/10">
-                <SmartImg sources={card.srcs} alt={card.caption} className="w-full h-64 object-cover" />
+              <div
+                key={card.caption}
+                className="bg-neutral-900 rounded-2xl shadow-lg overflow-hidden border border-white/10"
+              >
+                <SmartImg
+                  sources={card.srcs}
+                  alt={card.caption}
+                  className="w-full h-64 object-cover"
+                />
                 <div className="p-4 text-center text-sm text-gray-300">{card.caption}</div>
               </div>
             ))}
@@ -619,20 +751,17 @@ export default function Home() {
 
       {/* GALLERY */}
       <section id="gallery" className="mx-auto max-w-6xl px-6 py-12">
-        <Reveal><h2 className="text-2xl font-semibold">Gallery</h2></Reveal>
+        <Reveal>
+          <h2 className="text-2xl font-semibold">Gallery</h2>
+        </Reveal>
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {[
-            ["/soap-close.jpg", "/soap-close.jpeg"],
-            ["/interior-vs-exterior.jpg", "/interior-vs-exterior.jpeg"],
-            ["/polish-black-portrait.jpg", "/polish-black-portrait.jpeg"],
-            ["/wipe-blue-cloth.jpg", "/wipe-blue-cloth.jpeg"],
-            ["/before-after-mats.jpg", "/before-after-mats.jpeg"],
-            ["/before-after-seat.jpg", "/before-after-seat.jpeg"],
-            ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"],
-            ["/before-after-door.jpg", "/before-after-door.jpeg"],
-          ].map((srcs) => (
+          {gallery.map((srcs) => (
             <Reveal key={srcs[0]} delay={0.04}>
-              <SmartImg sources={srcs} alt="" className="h-40 w-full rounded-lg object-cover md:h-48" />
+              <SmartImg
+                sources={srcs}
+                alt=""
+                className="h-40 w-full rounded-lg object-cover md:h-48"
+              />
             </Reveal>
           ))}
         </div>
@@ -640,7 +769,9 @@ export default function Home() {
 
       {/* REVIEWS */}
       <section id="reviews" className="mx-auto max-w-6xl px-6 py-12">
-        <Reveal><h2 className="text-2xl font-semibold">Reviews</h2></Reveal>
+        <Reveal>
+          <h2 className="text-2xl font-semibold">Reviews</h2>
+        </Reveal>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
           {[
             { q: "Interior looked brand new. Professional and punctual.", n: "Jordan P." },
@@ -659,7 +790,9 @@ export default function Home() {
 
       {/* CONTACT */}
       <section id="contact" className="mx-auto max-w-6xl px-6 py-16">
-        <Reveal><h2 className="text-2xl font-semibold">Get a Free Quote</h2></Reveal>
+        <Reveal>
+          <h2 className="text-2xl font-semibold">Get a Free Quote</h2>
+        </Reveal>
         <form onSubmit={submitInquiry} className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
           {/* Honeypot */}
           <input
@@ -670,13 +803,46 @@ export default function Home() {
             onChange={(e) => setInq((v) => ({ ...v, company: e.target.value }))}
             placeholder="Company"
           />
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Name" required value={inq.name} onChange={e=>setInq(v=>({...v,name:e.target.value}))}/>
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" type="email" placeholder="Email" required value={inq.email} onChange={e=>setInq(v=>({...v,email:e.target.value}))}/>
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Phone" value={inq.phone} onChange={e=>setInq(v=>({...v,phone:e.target.value}))}/>
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Vehicle (Make/Model/Year)" value={inq.vehicle} onChange={e=>setInq(v=>({...v,vehicle:e.target.value}))}/>
-          <textarea className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40 md:col-span-2" rows={5} placeholder="Tell us what you need (odor removal, pet hair, spill, etc.)" required value={inq.message} onChange={e=>setInq(v=>({...v,message:e.target.value}))}/>
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            placeholder="Name"
+            required
+            value={inq.name}
+            onChange={(e) => setInq((v) => ({ ...v, name: e.target.value }))}
+          />
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            type="email"
+            placeholder="Email"
+            required
+            value={inq.email}
+            onChange={(e) => setInq((v) => ({ ...v, email: e.target.value }))}
+          />
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            placeholder="Phone"
+            value={inq.phone}
+            onChange={(e) => setInq((v) => ({ ...v, phone: e.target.value }))}
+          />
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            placeholder="Vehicle (Make/Model/Year)"
+            value={inq.vehicle}
+            onChange={(e) => setInq((v) => ({ ...v, vehicle: e.target.value }))}
+          />
+          <textarea
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40 md:col-span-2"
+            rows={5}
+            placeholder="Tell us what you need (odor removal, pet hair, spill, etc.)"
+            required
+            value={inq.message}
+            onChange={(e) => setInq((v) => ({ ...v, message: e.target.value }))}
+          />
           <div className="md:col-span-2 flex items-center gap-4">
-            <button disabled={inqBusy} className="rounded-md px-5 py-2.5 text-sm font-medium border border-white hover:bg-white hover:text-black transition">
+            <button
+              disabled={inqBusy}
+              className="rounded-md px-5 py-2.5 text-sm font-medium border border-white hover:bg-white hover:text-black transition"
+            >
               {inqBusy ? "Sending…" : "Send"}
             </button>
             {inqOK && <span className="text-sm text-emerald-400">Thanks! We’ll be in touch shortly.</span>}
@@ -687,7 +853,9 @@ export default function Home() {
 
       {/* BOOKING */}
       <section id="booking" className="mx-auto max-w-6xl px-6 pb-20">
-        <Reveal><h2 className="text-2xl font-semibold">Schedule Your Detail</h2></Reveal>
+        <Reveal>
+          <h2 className="text-2xl font-semibold">Schedule Your Detail</h2>
+        </Reveal>
         <form onSubmit={submitBooking} className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
           {/* Honeypot */}
           <input
@@ -698,15 +866,58 @@ export default function Home() {
             onChange={(e) => setBk((v) => ({ ...v, company: e.target.value }))}
             placeholder="Company"
           />
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Full Name" required value={bk.name} onChange={e=>setBk(v=>({...v,name:e.target.value}))}/>
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" type="email" placeholder="Email" required value={bk.email} onChange={e=>setBk(v=>({...v,email:e.target.value}))}/>
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Phone (SMS)" value={bk.phone} onChange={e=>setBk(v=>({...v,phone:e.target.value}))}/>
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Vehicle (Make/Model/Year)" value={bk.vehicle} onChange={e=>setBk(v=>({...v,vehicle:e.target.value}))}/>
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Selected Package" value={bk.package} onChange={e=>setBk(v=>({...v,package:e.target.value}))}/>
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" type="date" required value={bk.date} onChange={e=>setBk(v=>({...v,date:e.target.value}))}/>
-          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" type="time" required value={bk.time} onChange={e=>setBk(v=>({...v,time:e.target.value}))}/>
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            placeholder="Full Name"
+            required
+            value={bk.name}
+            onChange={(e) => setBk((v) => ({ ...v, name: e.target.value }))}
+          />
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            type="email"
+            placeholder="Email"
+            required
+            value={bk.email}
+            onChange={(e) => setBk((v) => ({ ...v, email: e.target.value }))}
+          />
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            placeholder="Phone (SMS)"
+            value={bk.phone}
+            onChange={(e) => setBk((v) => ({ ...v, phone: e.target.value }))}
+          />
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            placeholder="Vehicle (Make/Model/Year)"
+            value={bk.vehicle}
+            onChange={(e) => setBk((v) => ({ ...v, vehicle: e.target.value }))}
+          />
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            placeholder="Selected Package"
+            value={bk.package}
+            onChange={(e) => setBk((v) => ({ ...v, package: e.target.value }))}
+          />
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            type="date"
+            required
+            value={bk.date}
+            onChange={(e) => setBk((v) => ({ ...v, date: e.target.value }))}
+          />
+          <input
+            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
+            type="time"
+            required
+            value={bk.time}
+            onChange={(e) => setBk((v) => ({ ...v, time: e.target.value }))}
+          />
           <div className="md:col-span-2 flex items-center gap-4">
-            <button disabled={bkBusy} className="rounded-md px-5 py-2.5 text-sm font-medium border border-white hover:bg-white hover:text-black transition">
+            <button
+              disabled={bkBusy}
+              className="rounded-md px-5 py-2.5 text-sm font-medium border border-white hover:bg-white hover:text-black transition"
+            >
               {bkBusy ? "Sending…" : "Request Appointment"}
             </button>
             {bkOK && <span className="text-sm text-emerald-400">We’ll confirm by email/text.</span>}
