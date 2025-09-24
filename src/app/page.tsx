@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, useInView, AnimatePresence } from "framer-motion";
+import Link from "next/link"; // ✅ use next/link for internal navigation
 
 /* ---------------- Theme (dark minimalist) ---------------- */
 const PALETTE = {
@@ -472,14 +473,14 @@ export default function Home() {
       {/* NAV */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/70 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-         <Link href="/" className="flex items-center gap-3">
-  <SmartImg
-    sources={["/logo-ac.png", "/logo-ac.jpg", "/logo-ac.jpeg"]}
-    alt="AC Detailing & Cleaning"
-    className="h-8 w-auto"
-  />
-  <span className="font-semibold tracking-tight">AC Detailing</span>
-</Link>
+          <Link href="/" className="flex items-center gap-3">
+            <SmartImg
+              sources={["/logo-ac.png", "/logo-ac.jpg", "/logo-ac.jpeg"]}
+              alt="AC Detailing & Cleaning"
+              className="h-8 w-auto"
+            />
+            <span className="font-semibold tracking-tight">AC Detailing</span>
+          </Link>
           <nav className="hidden gap-8 text-sm md:flex">
             <a href="#services" className="hover:opacity-70">Services</a>
             <a href="#packages" className="hover:opacity-70">Packages</a>
