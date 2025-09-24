@@ -1,9 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import Link from "next/link"; // ✅ use next/link for internal navigation
 
 /* ---------------- Theme (dark minimalist) ---------------- */
 const PALETTE = {
@@ -382,21 +382,22 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
    PAGE
    ========================================================= */
 export default function Home() {
-  /* Forms wired to Supabase */
-  const [inq, setInq] = useState({ name: "", email: "", phone: "", vehicle: "", message: "", company: "" }); // company = honeypot
+  // Inquiry form (with honeypot)
+  const [inq, setInq] = useState({ name: "", email: "", phone: "", vehicle: "", message: "", company: "" });
   const [inqBusy, setInqBusy] = useState(false);
   const [inqOK, setInqOK] = useState(false);
   const [inqErr, setInqErr] = useState<string | null>(null);
 
+  // Booking form (with honeypot)
   const [bk, setBk] = useState({
     name: "", email: "", phone: "", vehicle: "",
-    package: "Interior + Exterior", date: "", time: "", company: "", // honeypot
+    package: "Interior + Exterior", date: "", time: "", company: "",
   });
   const [bkBusy, setBkBusy] = useState(false);
   const [bkOK, setBkOK] = useState(false);
   const [bkErr, setBkErr] = useState<string | null>(null);
 
-  // Footer year after mount (avoid tiny hydration mismatches)
+  // Footer year after mount (avoid SSR hydration nits)
   const [year, setYear] = useState<string>("");
   useEffect(() => setYear(String(new Date().getFullYear())), []);
 
@@ -412,7 +413,7 @@ export default function Home() {
 
   async function submitInquiry(e: React.FormEvent) {
     e.preventDefault();
-    if (inq.company) return; // honeypot filled => drop silently
+    if (inq.company) return; // honeypot
     if (!validEmail(inq.email)) return setInqErr("Please enter a valid email.");
     setInqBusy(true); setInqErr(null);
     const payload = { name: inq.name, email: inq.email, phone: inq.phone, vehicle: inq.vehicle, message: inq.message };
@@ -473,7 +474,7 @@ export default function Home() {
       {/* NAV */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/70 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" prefetch={false} className="flex items-center gap-3">
             <SmartImg
               sources={["/logo-ac.png", "/logo-ac.jpg", "/logo-ac.jpeg"]}
               alt="AC Detailing & Cleaning"
@@ -554,12 +555,17 @@ export default function Home() {
       {/* PRICING GUIDES (always open) */}
       <PricingGuidesSection onSelectPackage={handleSelectPackage} />
 
-      {/* POSTERS (big, swipeable) */}
+      {/* POSTERS */}
       <section id="pricing" className="px-0 py-16">
         <Reveal><h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Pricing </h2></Reveal>
         <div className="mt-8 overflow-x-auto snap-x snap-mandatory">
           <div className="flex gap-6 px-6">
-            {posters.map((img) => (
+            {[
+              { srcs: ["/referral-pricing.png"], alt: "Referral Program" },
+              { srcs: ["/ceramic-pricing.png"], alt: "Ceramic pricing" },
+              { srcs: ["/interior-pricing.png"], alt: "Interior pricing" },
+              { srcs: ["/full-pricing.png"], alt: "Full pricing" },
+            ].map((img) => (
               <div
                 key={img.srcs[0]}
                 className="snap-center shrink-0 rounded-2xl border border-white/10 bg-white/5 backdrop-blur"
@@ -599,7 +605,16 @@ export default function Home() {
       <section id="gallery" className="mx-auto max-w-6xl px-6 py-12">
         <Reveal><h2 className="text-2xl font-semibold">Gallery</h2></Reveal>
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {gallery.map((srcs) => (
+          {[
+            ["/soap-close.jpg", "/soap-close.jpeg"],
+            ["/interior-vs-exterior.jpg", "/interior-vs-exterior.jpeg"],
+            ["/polish-black-portrait.jpg", "/polish-black-portrait.jpeg"],
+            ["/wipe-blue-cloth.jpg", "/wipe-blue-cloth.jpeg"],
+            ["/before-after-mats.jpg", "/before-after-mats.jpeg"],
+            ["/before-after-seat.jpg", "/before-after-seat.jpeg"],
+            ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"],
+            ["/before-after-door.jpg", "/before-after-door.jpeg"],
+          ].map((srcs) => (
             <Reveal key={srcs[0]} delay={0.04}>
               <SmartImg sources={srcs} alt="" className="h-40 w-full rounded-lg object-cover md:h-48" />
             </Reveal>
@@ -630,7 +645,7 @@ export default function Home() {
       <section id="contact" className="mx-auto max-w-6xl px-6 py-16">
         <Reveal><h2 className="text-2xl font-semibold">Get a Free Quote</h2></Reveal>
         <form onSubmit={submitInquiry} className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {/* Honeypot (hidden) */}
+          {/* Honeypot */}
           <input
             className="hidden"
             tabIndex={-1}
