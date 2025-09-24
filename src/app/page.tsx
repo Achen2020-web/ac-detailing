@@ -15,10 +15,9 @@ const PALETTE = {
 };
 
 /* ---------------- Smart image with next/image + graceful fallbacks ----------------
-   - Applies your provided `className` to the WRAPPER (which sets dimensions).
-   - Uses next/image with `fill` for proper optimization.
-   - Tries multiple sources; if one fails, advances to the next.
-   - Shows a tiny placeholder if all sources fail.
+   - The wrapper div receives your className (sets size & fit classes)
+   - next/image uses `fill` for optimization
+   - Tries multiple sources; if one fails, advances to the next
 ----------------------------------------------------------------------------- */
 function SmartImg({
   sources,
@@ -30,14 +29,10 @@ function SmartImg({
   className?: string;
 }) {
   const [idx, setIdx] = useState(0);
-  const [failed, setFailed] = useState(false);
+  const [failedAll, setFailedAll] = useState(false);
   const src = sources[idx];
 
-  // decide fit based on your className usage (object-cover / object-contain)
-  const wantsContain = (className || "").includes("object-contain");
-  const fitClass = wantsContain ? "object-contain" : "object-cover";
-
-  if (!src || failed) {
+  if (!src || failedAll) {
     return (
       <div
         className={
@@ -56,27 +51,27 @@ function SmartImg({
         src={src}
         alt={alt}
         fill
-        priority={false}
         sizes="100vw"
-        className={fitClass}
+        className={
+          // Keep whatever fit you passed (object-cover / object-contain)
+          (className || "").includes("object-contain")
+            ? "object-contain"
+            : "object-cover"
+        }
         onError={() => {
           if (idx < sources.length - 1) setIdx(idx + 1);
-          else setFailed(true);
+          else setFailedAll(true);
         }}
+        // For large hero images we don’t need blur placeholders
+        priority={false}
       />
     </div>
   );
 }
 
 /* ---------------- Small motion helper ---------------- */
-function Reveal({
-  children,
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-}) {
-  const ref = useRef<HTMLDivElement | null>(null);
+function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef(null);
   const inView = useInView(ref, { once: true, amount: 0.18 });
   return (
     <div ref={ref}>
@@ -418,7 +413,7 @@ export default function Home() {
   const [bkOK, setBkOK] = useState(false);
   const [bkErr, setBkErr] = useState<string | null>(null);
 
-  // Footer year after mount (avoid SSR tiny mismatch)
+  // Footer year after mount (avoid SSR hydration nits)
   const [year, setYear] = useState<string>("");
   useEffect(() => setYear(String(new Date().getFullYear())), []);
 
@@ -499,7 +494,7 @@ export default function Home() {
             <SmartImg
               sources={["/logo-ac.png", "/logo-ac.jpg", "/logo-ac.jpeg"]}
               alt="AC Detailing & Cleaning"
-              className="h-8 w-auto"
+              className="h-8 w-[140px] object-contain"
             />
             <span className="font-semibold tracking-tight">AC Detailing</span>
           </Link>
@@ -606,7 +601,7 @@ export default function Home() {
             Customer Results
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {[
               { srcs: ["/before-after-seat.jpg", "/before-after-seat.jpeg"], caption: "Interior Seat Restoration" },
               { srcs: ["/before-after-mats.jpg", "/before-after-mats.jpeg"], caption: "Floor Mat Deep Clean" },
@@ -626,7 +621,16 @@ export default function Home() {
       <section id="gallery" className="mx-auto max-w-6xl px-6 py-12">
         <Reveal><h2 className="text-2xl font-semibold">Gallery</h2></Reveal>
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {gallery.map((srcs) => (
+          {[
+            ["/soap-close.jpg", "/soap-close.jpeg"],
+            ["/interior-vs-exterior.jpg", "/interior-vs-exterior.jpeg"],
+            ["/polish-black-portrait.jpg", "/polish-black-portrait.jpeg"],
+            ["/wipe-blue-cloth.jpg", "/wipe-blue-cloth.jpeg"],
+            ["/before-after-mats.jpg", "/before-after-mats.jpeg"],
+            ["/before-after-seat.jpg", "/before-after-seat.jpeg"],
+            ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"],
+            ["/before-after-door.jpg", "/before-after-door.jpeg"],
+          ].map((srcs) => (
             <Reveal key={srcs[0]} delay={0.04}>
               <SmartImg sources={srcs} alt="" className="h-40 w-full rounded-lg object-cover md:h-48" />
             </Reveal>
