@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, useInView, AnimatePresence } from "framer-motion";
@@ -13,7 +14,12 @@ const PALETTE = {
   border: "border-white/15",
 };
 
-/* ---------------- Smart image with graceful fallbacks ---------------- */
+/* ---------------- Smart image with next/image + graceful fallbacks ----------------
+   - Applies your provided `className` to the WRAPPER (which sets dimensions).
+   - Uses next/image with `fill` for proper optimization.
+   - Tries multiple sources; if one fails, advances to the next.
+   - Shows a tiny placeholder if all sources fail.
+----------------------------------------------------------------------------- */
 function SmartImg({
   sources,
   alt,
@@ -26,6 +32,10 @@ function SmartImg({
   const [idx, setIdx] = useState(0);
   const [failed, setFailed] = useState(false);
   const src = sources[idx];
+
+  // decide fit based on your className usage (object-cover / object-contain)
+  const wantsContain = (className || "").includes("object-contain");
+  const fitClass = wantsContain ? "object-contain" : "object-cover";
 
   if (!src || failed) {
     return (
@@ -41,21 +51,32 @@ function SmartImg({
   }
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={() => {
-        if (idx < sources.length - 1) setIdx(idx + 1);
-        else setFailed(true);
-      }}
-    />
+    <div className={("relative " + (className || "")).trim()}>
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        priority={false}
+        sizes="100vw"
+        className={fitClass}
+        onError={() => {
+          if (idx < sources.length - 1) setIdx(idx + 1);
+          else setFailed(true);
+        }}
+      />
+    </div>
   );
 }
 
 /* ---------------- Small motion helper ---------------- */
-function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  const ref = useRef(null);
+function Reveal({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, amount: 0.18 });
   return (
     <div ref={ref}>
@@ -397,7 +418,7 @@ export default function Home() {
   const [bkOK, setBkOK] = useState(false);
   const [bkErr, setBkErr] = useState<string | null>(null);
 
-  // Footer year after mount (avoid SSR hydration nits)
+  // Footer year after mount (avoid SSR tiny mismatch)
   const [year, setYear] = useState<string>("");
   useEffect(() => setYear(String(new Date().getFullYear())), []);
 
@@ -605,16 +626,7 @@ export default function Home() {
       <section id="gallery" className="mx-auto max-w-6xl px-6 py-12">
         <Reveal><h2 className="text-2xl font-semibold">Gallery</h2></Reveal>
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {[
-            ["/soap-close.jpg", "/soap-close.jpeg"],
-            ["/interior-vs-exterior.jpg", "/interior-vs-exterior.jpeg"],
-            ["/polish-black-portrait.jpg", "/polish-black-portrait.jpeg"],
-            ["/wipe-blue-cloth.jpg", "/wipe-blue-cloth.jpeg"],
-            ["/before-after-mats.jpg", "/before-after-mats.jpeg"],
-            ["/before-after-seat.jpg", "/before-after-seat.jpeg"],
-            ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"],
-            ["/before-after-door.jpg", "/before-after-door.jpeg"],
-          ].map((srcs) => (
+          {gallery.map((srcs) => (
             <Reveal key={srcs[0]} delay={0.04}>
               <SmartImg sources={srcs} alt="" className="h-40 w-full rounded-lg object-cover md:h-48" />
             </Reveal>
