@@ -544,8 +544,6 @@ export default function Home() {
   const posters = [
     { srcs: ["/referral-pricing.png"], alt: "Referral Program" },
     { srcs: ["/ceramic-pricing.png"], alt: "Ceramic pricing" },
-    { srcs: ["/interior-pricing.png"], alt: "Interior pricing" },
-    { srcs: ["/full-pricing.png"], alt: "Full pricing" },
   ];
 
   /* Gallery – use JPEGs to keep consistent */
