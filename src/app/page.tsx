@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 
-/* ---------------- Theme ---------------- */
+/* ---------------- Theme (dark minimalist) ---------------- */
 const PALETTE = {
   bg: "bg-black",
   text: "text-white",
@@ -14,7 +14,11 @@ const PALETTE = {
   border: "border-white/15",
 };
 
-/* ---------------- Smart Image (next/image + fallbacks) ---------------- */
+/* ---------------- Smart image with next/image + graceful fallbacks ----------------
+   - Wrapper gets your className (sets size & fit classes)
+   - Uses next/image (fill) for optimization
+   - Tries multiple sources; if one fails, advances to the next
+----------------------------------------------------------------------------- */
 function SmartImg({
   sources,
   alt,
@@ -63,7 +67,7 @@ function SmartImg({
   );
 }
 
-/* ---------------- Reveal Motion Helper ---------------- */
+/* ---------------- Small motion helper ---------------- */
 function Reveal({
   children,
   delay = 0,
@@ -86,11 +90,11 @@ function Reveal({
   );
 }
 
-/* ---------------- HERO FADE SLIDESHOW ---------------- */
+/* ---------------- HERO FADE SLIDESHOW (JPEGs only) ---------------- */
 const heroSlides: string[][] = [
-  ["/soap-close.jpeg", "/soap-close.jpg"],
-  ["/soap-sunset.jpeg", "/soap-sunset.jpg"],
-  ["/wipe-blue-cloth.jpeg", "/wipe-blue-cloth.jpg"],
+  ["/soap-sunset.jpeg"],
+  ["/polish-black-portrait.jpeg"],
+  ["/hero-polish.jpeg"],
 ];
 
 function HeroSlideshow({
@@ -107,7 +111,6 @@ function HeroSlideshow({
 
   return (
     <section className="relative h-[92vh] w-full isolate overflow-hidden">
-      {/* Fading background slideshow */}
       <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={i}
@@ -125,10 +128,8 @@ function HeroSlideshow({
         </motion.div>
       </AnimatePresence>
 
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/45" />
 
-      {/* Hero content */}
       <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col items-start justify-center px-6">
         <h1 className="max-w-3xl text-4xl md:text-6xl font-extrabold tracking-tight leading-[0.95]">
           VEHICLE DETAILING
@@ -155,7 +156,7 @@ function HeroSlideshow({
         </div>
       </div>
 
-      {/* Slide dots */}
+      {/* simple progress dots (read-only) */}
       <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
         {heroSlides.map((_, idx) => (
           <span
@@ -171,7 +172,9 @@ function HeroSlideshow({
   );
 }
 
-/* ---------------- PACKAGES (Tabbed) ---------------- */
+/* =========================================================
+   PACKAGES (Tabbed)
+   ========================================================= */
 function PackagesSection({ onSelectPackage }: { onSelectPackage: (pkg: string) => void }) {
   type SizeKey = "2-door" | "4-door" | "suv" | "large";
 
@@ -342,7 +345,9 @@ function PackagesSection({ onSelectPackage }: { onSelectPackage: (pkg: string) =
   );
 }
 
-/* ---------------- PRICING GUIDES ---------------- */
+/* =========================================================
+   PRICING GUIDES (always open)
+   ========================================================= */
 function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: string) => void }) {
   type TabKey = "interior" | "ceramic";
   const [tab, setTab] = useState<TabKey>("interior");
@@ -475,37 +480,26 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
   );
 }
 
-/* ---------------- PAGE ---------------- */
+/* =========================================================
+   PAGE
+   ========================================================= */
 export default function Home() {
-  /* Inquiry form */
-  const [inq, setInq] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    vehicle: "",
-    message: "",
-    company: "",
-  });
+  // Inquiry form (with honeypot)
+  const [inq, setInq] = useState({ name: "", email: "", phone: "", vehicle: "", message: "", company: "" });
   const [inqBusy, setInqBusy] = useState(false);
   const [inqOK, setInqOK] = useState(false);
   const [inqErr, setInqErr] = useState<string | null>(null);
 
-  /* Booking form */
+  // Booking form (with honeypot)
   const [bk, setBk] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    vehicle: "",
-    package: "Interior + Exterior",
-    date: "",
-    time: "",
-    company: "",
+    name: "", email: "", phone: "", vehicle: "",
+    package: "Interior + Exterior", date: "", time: "", company: "",
   });
   const [bkBusy, setBkBusy] = useState(false);
   const [bkOK, setBkOK] = useState(false);
   const [bkErr, setBkErr] = useState<string | null>(null);
 
-  /* Footer year (avoid hydration nit) */
+  // Footer year after mount (avoid SSR hydration nits)
   const [year, setYear] = useState<string>("");
   useEffect(() => setYear(String(new Date().getFullYear())), []);
 
@@ -517,65 +511,32 @@ export default function Home() {
 
   function validEmail(e: string) {
     return /\S+@\S+\.\S+/.test(e);
-    // simple client-side check
   }
 
   async function submitInquiry(e: React.FormEvent) {
     e.preventDefault();
     if (inq.company) return; // honeypot
     if (!validEmail(inq.email)) return setInqErr("Please enter a valid email.");
-    setInqBusy(true);
-    setInqErr(null);
-    const payload = {
-      name: inq.name,
-      email: inq.email,
-      phone: inq.phone,
-      vehicle: inq.vehicle,
-      message: inq.message,
-    };
+    setInqBusy(true); setInqErr(null);
+    const payload = { name: inq.name, email: inq.email, phone: inq.phone, vehicle: inq.vehicle, message: inq.message };
     const { error } = await supabase.from("customer_inquiries").insert([payload]);
     setInqBusy(false);
     if (error) return setInqErr(error.message);
     setInqOK(true);
-    setInq({
-      name: "",
-      email: "",
-      phone: "",
-      vehicle: "",
-      message: "",
-      company: "",
-    });
+    setInq({ name: "", email: "", phone: "", vehicle: "", message: "", company: "" });
   }
 
   async function submitBooking(e: React.FormEvent) {
     e.preventDefault();
     if (bk.company) return; // honeypot
     if (!validEmail(bk.email)) return setBkErr("Please enter a valid email.");
-    setBkBusy(true);
-    setBkErr(null);
-    const payload = {
-      name: bk.name,
-      email: bk.email,
-      phone: bk.phone,
-      vehicle: bk.vehicle,
-      package: bk.package,
-      date: bk.date,
-      time: bk.time,
-    };
+    setBkBusy(true); setBkErr(null);
+    const payload = { name: bk.name, email: bk.email, phone: bk.phone, vehicle: bk.vehicle, package: bk.package, date: bk.date, time: bk.time };
     const { error } = await supabase.from("bookings").insert([payload]);
     setBkBusy(false);
     if (error) return setBkErr(error.message);
     setBkOK(true);
-    setBk({
-      name: "",
-      email: "",
-      phone: "",
-      vehicle: "",
-      package: "Interior + Exterior",
-      date: "",
-      time: "",
-      company: "",
-    });
+    setBk({ name: "", email: "", phone: "", vehicle: "", package: "Interior + Exterior", date: "", time: "", company: "" });
   }
 
   /* Posters (pricing) */
@@ -586,16 +547,16 @@ export default function Home() {
     { srcs: ["/full-pricing.png"], alt: "Full pricing" },
   ];
 
-  /* Gallery */
+  /* Gallery – use JPEGs to keep consistent */
   const gallery = [
-    ["/soap-close.jpg", "/soap-close.jpeg"],
-    ["/interior-vs-exterior.jpg", "/interior-vs-exterior.jpeg"],
-    ["/polish-black-portrait.jpg", "/polish-black-portrait.jpeg"],
-    ["/wipe-blue-cloth.jpg", "/wipe-blue-cloth.jpeg"],
-    ["/before-after-mats.jpg", "/before-after-mats.jpeg"],
-    ["/before-after-seat.jpg", "/before-after-seat.jpeg"],
-    ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"],
-    ["/before-after-door.jpg", "/before-after-door.jpeg"],
+    ["/soap-sunset.jpeg"],
+    ["/polish-black-portrait.jpeg"],
+    ["/hero-polish.jpeg"],
+    ["/wipe-blue-cloth.jpeg"],
+    ["/before-after-mats.jpeg"],
+    ["/before-after-seat.jpeg"],
+    ["/before-after-trunk.jpeg"],
+    ["/before-after-door.jpeg"],
   ];
 
   return (
@@ -605,7 +566,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
           <Link href="/" prefetch={false} className="flex items-center gap-3">
             <SmartImg
-              sources={["/logo-ac.png", "/logo-ac.jpg", "/logo-ac.jpeg"]}
+              sources={["/logo-ac.png", "/logo-ac.jpeg"]}
               alt="AC Detailing & Cleaning"
               className="h-8 w-[140px] object-contain"
             />
@@ -620,12 +581,7 @@ export default function Home() {
             <a href="#reviews" className="hover:opacity-70">Reviews</a>
             <a href="#contact" className="hover:opacity-70">Contact</a>
           </nav>
-          <a
-            href="#booking"
-            className="rounded-md px-4 py-2 text-sm border border-white hover:bg-white hover:text-black transition"
-          >
-            Book Now
-          </a>
+          <a href="#booking" className="rounded-md px-4 py-2 text-sm border border-white hover:bg-white hover:text-black transition">Book Now</a>
         </div>
       </header>
 
@@ -654,10 +610,10 @@ export default function Home() {
       {/* PACKAGES */}
       <PackagesSection onSelectPackage={handleSelectPackage} />
 
-      {/* PRICING GUIDES */}
+      {/* PRICING GUIDES (always open) */}
       <PricingGuidesSection onSelectPackage={handleSelectPackage} />
 
-      {/* POSTERS (big swipeable) */}
+      {/* POSTERS */}
       <section id="pricing" className="px-0 py-16">
         <Reveal><h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Pricing </h2></Reveal>
         <div className="mt-8 overflow-x-auto snap-x snap-mandatory">
@@ -684,10 +640,10 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {[
-              { srcs: ["/before-after-seat.jpg", "/before-after-seat.jpeg"], caption: "Interior Seat Restoration" },
-              { srcs: ["/before-after-mats.jpg", "/before-after-mats.jpeg"], caption: "Floor Mat Deep Clean" },
-              { srcs: ["/before-after-door.jpg", "/before-after-door.jpeg"], caption: "Door Panel Refresh" },
-              { srcs: ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"], caption: "Full Trunk Cleanout" },
+              { srcs: ["/before-after-seat.jpeg"], caption: "Interior Seat Restoration" },
+              { srcs: ["/before-after-mats.jpeg"], caption: "Floor Mat Deep Clean" },
+              { srcs: ["/before-after-door.jpeg"], caption: "Door Panel Refresh" },
+              { srcs: ["/before-after-trunk.jpeg"], caption: "Full Trunk Cleanout" },
             ].map((card) => (
               <div key={card.caption} className="bg-neutral-900 rounded-2xl shadow-lg overflow-hidden border border-white/10">
                 <SmartImg sources={card.srcs} alt={card.caption} className="w-full h-64 object-cover" />
