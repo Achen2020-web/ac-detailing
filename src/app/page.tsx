@@ -543,7 +543,6 @@ export default function Home() {
   /* Posters (pricing) */
   const posters = [
     { srcs: ["/referral-pricing.png"], alt: "Referral Program" },
-    { srcs: ["/ceramic-pricing.png"], alt: "Ceramic pricing" },
   ];
 
   /* Gallery – use JPEGs to keep consistent */
@@ -610,8 +609,8 @@ export default function Home() {
       <PricingGuidesSection onSelectPackage={handleSelectPackage} />
 
       {/* POSTERS */}
-      <section id="pricing" className="px-0 py-16">
-        <Reveal><h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Pricing </h2></Reveal>
+      <section id="Referral" className="px-0 py-16">
+        <Reveal><h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Referral </h2></Reveal>
         <div className="mt-8 overflow-x-auto snap-x snap-mandatory">
           <div className="flex gap-6 px-6">
             {posters.map((img) => (
