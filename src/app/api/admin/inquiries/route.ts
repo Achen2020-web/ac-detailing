@@ -1,86 +1,86 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 
-// Gmail SMTP transporter
-function makeTransporter() {
-  const user = process.env.GMAIL_USER!;
-  const pass = process.env.GMAIL_PASS!;
-  if (!user || !pass) throw new Error("Missing GMAIL_USER/GMAIL_PASS env vars");
+// OPTIONAL: Resend for email; Twilio for SMS
+import { Resend } from "resend";
+import twilio from "twilio";
 
-  return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: { user, pass },
-  });
+const resend = new Resend(process.env.RESEND_API_KEY);      // or SendGrid/Postmark
+const twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
+
+function verifySignature(req: NextRequest) {
+  const secret = process.env.SUPABASE_WEBHOOK_SECRET || "";
+  const got = req.headers.get("x-supa-signature") || "";
+  return secret && got && got === secret; // use HMAC if you prefer; this is the simplest
 }
-
-const EXPECTED = process.env.SUPABASE_WEBHOOK_SECRET;
 
 export async function POST(req: NextRequest) {
   try {
-    // Optional: shared secret check for Supabase DB Webhook
-    if (EXPECTED) {
-      const sig = req.headers.get("x-supabase-signature");
-      if (sig !== EXPECTED) {
-        return NextResponse.json({ ok: false, msg: "unauthorized" }, { status: 401 });
-      }
+    if (!verifySignature(req)) {
+      return NextResponse.json({ ok: false, error: "bad signature" }, { status: 401 });
     }
 
-    // Supabase DB webhook payload shape (row-level)
-    const payload = await req.json();
-    const row = payload.record || payload.new || payload;
+    const body = await req.json();
+    // Supabase sends something like: { type, table, record, schema, ... }
+    const booking = body?.record || body?.new || body; // be tolerant to shapes
+    if (!booking?.email) {
+      return NextResponse.json({ ok: false, error: "no booking/email" }, { status: 400 });
+    }
 
-    // Fallbacks so the email always renders
-    const name = row?.name || "Unknown";
-    const email = row?.email || "Unknown";
-    const phone = row?.phone || "Unknown";
-    const vehicle = row?.vehicle || "Unknown";
-    const message = row?.message || "No message";
-
-    const transporter = makeTransporter();
-    const from = `AC Detailing <${process.env.GMAIL_USER}>`;
-    const to = process.env.GMAIL_USER!; // send to yourself
-
-    // Email to YOU (the business)
-    await transporter.sendMail({
-      from,
-      to,
-      subject: "New Inquiry Received",
-      text:
-`New inquiry from the website:
-
-Name:    ${name}
-Email:   ${email}
-Phone:   ${phone}
-Vehicle: ${vehicle}
-
-Message:
-${message}
-`,
-      // makes reply button go to the customer's address
-      replyTo: email !== "Unknown" ? email : undefined,
-    });
-
-    // (Optional) Send a quick confirmation to the customer if they left a valid email
-    if (email && email.includes("@")) {
-      await transporter.sendMail({
-        from,
-        to: email,
-        subject: "We got your inquiry — AC Detailing",
-        text:
-`Hi ${name},
-
-Thanks for reaching out to AC Detailing. We received your message and will get back to you shortly.
-
-— AC Detailing
-acdetailcleaning@gmail.com`,
+    // ---- Send email to customer
+    try {
+      await resend.emails.send({
+        from: "AC Detailing <bookings@yourdomain.com>",
+        to: booking.email,
+        subject: "We got your booking request ✔",
+        html: `
+          <h2>Thanks for booking, ${booking.name || ""}!</h2>
+          <p>Package: ${booking.package || "—"}</p>
+          <p>Date: ${booking.date || "—"} at ${booking.time || "—"}</p>
+          <p>We’ll confirm shortly. Reply to this email with any questions.</p>
+        `,
       });
+    } catch (e) {
+      console.error("Customer email failed", e);
+    }
+
+    // ---- Send email to you (admin)
+    try {
+      await resend.emails.send({
+        from: "AC Detailing <alerts@yourdomain.com>",
+        to: process.env.ADMIN_EMAIL!, // set in Vercel env
+        subject: "New booking received",
+        html: `
+          <h3>New booking</h3>
+          <ul>
+            <li>Name: ${booking.name}</li>
+            <li>Email: ${booking.email}</li>
+            <li>Phone: ${booking.phone || "—"}</li>
+            <li>Vehicle: ${booking.vehicle || "—"}</li>
+            <li>Package: ${booking.package || "—"}</li>
+            <li>Date: ${booking.date || "—"} ${booking.time || ""}</li>
+          </ul>
+        `,
+      });
+    } catch (e) {
+      console.error("Admin email failed", e);
+    }
+
+    // ---- Optional SMS to you or the customer
+    if (process.env.TWILIO_FROM && booking.phone) {
+      try {
+        await twilioClient.messages.create({
+          from: process.env.TWILIO_FROM,
+          to: booking.phone, // or your phone for admin SMS alerts
+          body: `AC Detailing: Booking received for ${booking.date || ""} ${booking.time || ""}. We'll confirm shortly.`,
+        });
+      } catch (e) {
+        console.error("SMS failed", e);
+      }
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("inquiry-webhook error", err);
-    return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 500 });
+    console.error(err);
+    return NextResponse.json({ ok: false, error: "server error" }, { status: 500 });
   }
 }
