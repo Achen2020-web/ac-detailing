@@ -608,23 +608,29 @@ export default function Home() {
       {/* PRICING GUIDES (always open) */}
       <PricingGuidesSection onSelectPackage={handleSelectPackage} />
 
-      {/* POSTERS */}
-      <section id="Referral" className="px-0 py-16">
-        <Reveal><h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Referral </h2></Reveal>
-        <div className="mt-8 overflow-x-auto snap-x snap-mandatory">
-          <div className="flex gap-6 px-6">
-            {posters.map((img) => (
-              <div
-                key={img.srcs[0]}
-                className="snap-center shrink-0 rounded-2xl border border-white/10 bg-white/5 backdrop-blur"
-                style={{ width: "min(92vw, 950px)" }}
-              >
-                <SmartImg sources={img.srcs} alt={img.alt} className="h-[86vh] w-full object-contain p-4" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+ {/* REFERRAL PROGRAM */}
+<section id="referral-program" className="px-0 py-16">
+  <Reveal>
+    <h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold text-center">
+      Referral Program
+    </h2>
+  </Reveal>
+  <div className="mt-8 flex justify-center px-6">
+    {posters.map((img) => (
+      <div
+        key={img.srcs[0]}
+        className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur flex justify-center items-center"
+        style={{ width: "min(92vw, 900px)" }}
+      >
+        <SmartImg
+          sources={img.srcs}
+          alt={img.alt}
+          className="object-contain h-[86vh] w-auto p-4"
+        />
+      </div>
+    ))}
+  </div>
+</section>
 
       {/* CUSTOMER RESULTS */}
       <section id="results" className="py-20 bg-neutral-950">
