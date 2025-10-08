@@ -93,8 +93,10 @@ function Reveal({
 /* ---------------- HERO FADE SLIDESHOW (JPEGs only) ---------------- */
 const heroSlides: string[][] = [
   ["/soap-sunset.jpeg"],
-  ["/polish-black-portrait.jpeg"],
-  ["/hero-polish.jpeg"],
+  ["/polish-black.jpeg"],
+   ["/soap-car.jpeg"],
+   ["/red-mustang.jpeg"],
+  ["/yellowtowel.jpeg"],
 ];
 
 function HeroSlideshow({
