@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 
-/* ---------------- Theme (dark minimalist) ---------------- */
+/* ---------------- Theme ---------------- */
 const PALETTE = {
   bg: "bg-black",
   text: "text-white",
@@ -14,11 +14,7 @@ const PALETTE = {
   border: "border-white/15",
 };
 
-/* ---------------- Smart image with next/image + graceful fallbacks ----------------
-   - Wrapper gets your className (sets size & fit classes)
-   - Uses next/image (fill) for optimization
-   - Tries multiple sources; if one fails, advances to the next
------------------------------------------------------------------------------ */
+/* ---------------- Smart Image (next/image + fallbacks) ---------------- */
 function SmartImg({
   sources,
   alt,
@@ -67,7 +63,7 @@ function SmartImg({
   );
 }
 
-/* ---------------- Small motion helper ---------------- */
+/* ---------------- Reveal Motion Helper ---------------- */
 function Reveal({
   children,
   delay = 0,
@@ -90,11 +86,11 @@ function Reveal({
   );
 }
 
-/* ---------------- HERO SLIDESHOW ---------------- */
+/* ---------------- HERO FADE SLIDESHOW ---------------- */
 const heroSlides: string[][] = [
+  ["/soap-close.jpeg", "/soap-close.jpg"],
   ["/soap-sunset.jpeg", "/soap-sunset.jpg"],
-  ["/polish-black-portrait.jpeg", "/polish-black-portrait.jpg"],
-  ["/hero-polish.jpeg", "/hero-polish.jpg"],
+  ["/wipe-blue-cloth.jpeg", "/wipe-blue-cloth.jpg"],
 ];
 
 function HeroSlideshow({
@@ -103,30 +99,22 @@ function HeroSlideshow({
   onSelectPackage: (pkg: string) => void;
 }) {
   const [i, setI] = useState(0);
-  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    if (paused) return;
     const t = setInterval(() => setI((v) => (v + 1) % heroSlides.length), 5000);
     return () => clearInterval(t);
-  }, [paused]);
-
-  const go = (n: number) =>
-    setI((prev) => (prev + n + heroSlides.length) % heroSlides.length);
+  }, []);
 
   return (
-    <section
-      className="relative h-[92vh] w-full isolate overflow-hidden select-none"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
+    <section className="relative h-[92vh] w-full isolate overflow-hidden">
+      {/* Fading background slideshow */}
       <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={i}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 1.0 }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
           className="absolute inset-0"
         >
           <SmartImg
@@ -137,8 +125,10 @@ function HeroSlideshow({
         </motion.div>
       </AnimatePresence>
 
+      {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/45" />
 
+      {/* Hero content */}
       <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col items-start justify-center px-6">
         <h1 className="max-w-3xl text-4xl md:text-6xl font-extrabold tracking-tight leading-[0.95]">
           VEHICLE DETAILING
@@ -165,46 +155,23 @@ function HeroSlideshow({
         </div>
       </div>
 
-      {/* Arrows */}
-      <button
-        aria-label="Previous slide"
-        onClick={() => go(-1)}
-        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 hover:bg-black/60 p-3 text-white"
-      >
-        ‹
-      </button>
-      <button
-        aria-label="Next slide"
-        onClick={() => go(1)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 hover:bg-black/60 p-3 text-white"
-      >
-        ›
-      </button>
-
-      {/* Dots */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
-        {heroSlides.map((_, idx) => {
-          const active = idx === i;
-          return (
-            <button
-              key={idx}
-              aria-label={`Go to slide ${idx + 1}`}
-              onClick={() => setI(idx)}
-              className={[
-                "h-2 w-2 rounded-full transition",
-                active ? "bg-white" : "bg-white/40 hover:bg-white/70",
-              ].join(" ")}
-            />
-          );
-        })}
+      {/* Slide dots */}
+      <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
+        {heroSlides.map((_, idx) => (
+          <span
+            key={idx}
+            className={[
+              "h-2 w-2 rounded-full",
+              i === idx ? "bg-white" : "bg-white/40",
+            ].join(" ")}
+          />
+        ))}
       </div>
     </section>
   );
 }
 
-/* =========================================================
-   PACKAGES (Tabbed)
-   ========================================================= */
+/* ---------------- PACKAGES (Tabbed) ---------------- */
 function PackagesSection({ onSelectPackage }: { onSelectPackage: (pkg: string) => void }) {
   type SizeKey = "2-door" | "4-door" | "suv" | "large";
 
@@ -375,9 +342,7 @@ function PackagesSection({ onSelectPackage }: { onSelectPackage: (pkg: string) =
   );
 }
 
-/* =========================================================
-   PRICING GUIDES (always open)
-   ========================================================= */
+/* ---------------- PRICING GUIDES ---------------- */
 function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: string) => void }) {
   type TabKey = "interior" | "ceramic";
   const [tab, setTab] = useState<TabKey>("interior");
@@ -510,11 +475,9 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
   );
 }
 
-/* =========================================================
-   PAGE
-   ========================================================= */
+/* ---------------- PAGE ---------------- */
 export default function Home() {
-  // Inquiry form (with honeypot)
+  /* Inquiry form */
   const [inq, setInq] = useState({
     name: "",
     email: "",
@@ -527,7 +490,7 @@ export default function Home() {
   const [inqOK, setInqOK] = useState(false);
   const [inqErr, setInqErr] = useState<string | null>(null);
 
-  // Booking form (with honeypot)
+  /* Booking form */
   const [bk, setBk] = useState({
     name: "",
     email: "",
@@ -542,7 +505,7 @@ export default function Home() {
   const [bkOK, setBkOK] = useState(false);
   const [bkErr, setBkErr] = useState<string | null>(null);
 
-  // Footer year after mount (avoid SSR hydration nits)
+  /* Footer year (avoid hydration nit) */
   const [year, setYear] = useState<string>("");
   useEffect(() => setYear(String(new Date().getFullYear())), []);
 
@@ -554,6 +517,7 @@ export default function Home() {
 
   function validEmail(e: string) {
     return /\S+@\S+\.\S+/.test(e);
+    // simple client-side check
   }
 
   async function submitInquiry(e: React.FormEvent) {
@@ -670,9 +634,7 @@ export default function Home() {
 
       {/* SERVICES */}
       <section id="services" className="mx-auto max-w-6xl px-6 py-16">
-        <Reveal>
-          <h2 className="text-2xl font-semibold">Services</h2>
-        </Reveal>
+        <Reveal><h2 className="text-2xl font-semibold">Services</h2></Reveal>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           {[
             { t: "Express Wash", d: "Foam contact wash, wheels, windows, quick interior tidy." },
@@ -692,14 +654,12 @@ export default function Home() {
       {/* PACKAGES */}
       <PackagesSection onSelectPackage={handleSelectPackage} />
 
-      {/* PRICING GUIDES (always open) */}
+      {/* PRICING GUIDES */}
       <PricingGuidesSection onSelectPackage={handleSelectPackage} />
 
-      {/* POSTERS */}
+      {/* POSTERS (big swipeable) */}
       <section id="pricing" className="px-0 py-16">
-        <Reveal>
-          <h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Pricing </h2>
-        </Reveal>
+        <Reveal><h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Pricing </h2></Reveal>
         <div className="mt-8 overflow-x-auto snap-x snap-mandatory">
           <div className="flex gap-6 px-6">
             {posters.map((img) => (
@@ -708,11 +668,7 @@ export default function Home() {
                 className="snap-center shrink-0 rounded-2xl border border-white/10 bg-white/5 backdrop-blur"
                 style={{ width: "min(92vw, 950px)" }}
               >
-                <SmartImg
-                  sources={img.srcs}
-                  alt={img.alt}
-                  className="h-[86vh] w-full object-contain p-4"
-                />
+                <SmartImg sources={img.srcs} alt={img.alt} className="h-[86vh] w-full object-contain p-4" />
               </div>
             ))}
           </div>
@@ -733,15 +689,8 @@ export default function Home() {
               { srcs: ["/before-after-door.jpg", "/before-after-door.jpeg"], caption: "Door Panel Refresh" },
               { srcs: ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"], caption: "Full Trunk Cleanout" },
             ].map((card) => (
-              <div
-                key={card.caption}
-                className="bg-neutral-900 rounded-2xl shadow-lg overflow-hidden border border-white/10"
-              >
-                <SmartImg
-                  sources={card.srcs}
-                  alt={card.caption}
-                  className="w-full h-64 object-cover"
-                />
+              <div key={card.caption} className="bg-neutral-900 rounded-2xl shadow-lg overflow-hidden border border-white/10">
+                <SmartImg sources={card.srcs} alt={card.caption} className="w-full h-64 object-cover" />
                 <div className="p-4 text-center text-sm text-gray-300">{card.caption}</div>
               </div>
             ))}
@@ -751,17 +700,11 @@ export default function Home() {
 
       {/* GALLERY */}
       <section id="gallery" className="mx-auto max-w-6xl px-6 py-12">
-        <Reveal>
-          <h2 className="text-2xl font-semibold">Gallery</h2>
-        </Reveal>
+        <Reveal><h2 className="text-2xl font-semibold">Gallery</h2></Reveal>
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           {gallery.map((srcs) => (
             <Reveal key={srcs[0]} delay={0.04}>
-              <SmartImg
-                sources={srcs}
-                alt=""
-                className="h-40 w-full rounded-lg object-cover md:h-48"
-              />
+              <SmartImg sources={srcs} alt="" className="h-40 w-full rounded-lg object-cover md:h-48" />
             </Reveal>
           ))}
         </div>
@@ -769,9 +712,7 @@ export default function Home() {
 
       {/* REVIEWS */}
       <section id="reviews" className="mx-auto max-w-6xl px-6 py-12">
-        <Reveal>
-          <h2 className="text-2xl font-semibold">Reviews</h2>
-        </Reveal>
+        <Reveal><h2 className="text-2xl font-semibold">Reviews</h2></Reveal>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
           {[
             { q: "Interior looked brand new. Professional and punctual.", n: "Jordan P." },
@@ -790,9 +731,7 @@ export default function Home() {
 
       {/* CONTACT */}
       <section id="contact" className="mx-auto max-w-6xl px-6 py-16">
-        <Reveal>
-          <h2 className="text-2xl font-semibold">Get a Free Quote</h2>
-        </Reveal>
+        <Reveal><h2 className="text-2xl font-semibold">Get a Free Quote</h2></Reveal>
         <form onSubmit={submitInquiry} className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
           {/* Honeypot */}
           <input
@@ -803,46 +742,13 @@ export default function Home() {
             onChange={(e) => setInq((v) => ({ ...v, company: e.target.value }))}
             placeholder="Company"
           />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            placeholder="Name"
-            required
-            value={inq.name}
-            onChange={(e) => setInq((v) => ({ ...v, name: e.target.value }))}
-          />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            type="email"
-            placeholder="Email"
-            required
-            value={inq.email}
-            onChange={(e) => setInq((v) => ({ ...v, email: e.target.value }))}
-          />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            placeholder="Phone"
-            value={inq.phone}
-            onChange={(e) => setInq((v) => ({ ...v, phone: e.target.value }))}
-          />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            placeholder="Vehicle (Make/Model/Year)"
-            value={inq.vehicle}
-            onChange={(e) => setInq((v) => ({ ...v, vehicle: e.target.value }))}
-          />
-          <textarea
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40 md:col-span-2"
-            rows={5}
-            placeholder="Tell us what you need (odor removal, pet hair, spill, etc.)"
-            required
-            value={inq.message}
-            onChange={(e) => setInq((v) => ({ ...v, message: e.target.value }))}
-          />
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Name" required value={inq.name} onChange={e=>setInq(v=>({...v,name:e.target.value}))}/>
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" type="email" placeholder="Email" required value={inq.email} onChange={e=>setInq(v=>({...v,email:e.target.value}))}/>
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Phone" value={inq.phone} onChange={e=>setInq(v=>({...v,phone:e.target.value}))}/>
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Vehicle (Make/Model/Year)" value={inq.vehicle} onChange={e=>setInq(v=>({...v,vehicle:e.target.value}))}/>
+          <textarea className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40 md:col-span-2" rows={5} placeholder="Tell us what you need (odor removal, pet hair, spill, etc.)" required value={inq.message} onChange={e=>setInq(v=>({...v,message:e.target.value}))}/>
           <div className="md:col-span-2 flex items-center gap-4">
-            <button
-              disabled={inqBusy}
-              className="rounded-md px-5 py-2.5 text-sm font-medium border border-white hover:bg-white hover:text-black transition"
-            >
+            <button disabled={inqBusy} className="rounded-md px-5 py-2.5 text-sm font-medium border border-white hover:bg-white hover:text-black transition">
               {inqBusy ? "Sending…" : "Send"}
             </button>
             {inqOK && <span className="text-sm text-emerald-400">Thanks! We’ll be in touch shortly.</span>}
@@ -853,9 +759,7 @@ export default function Home() {
 
       {/* BOOKING */}
       <section id="booking" className="mx-auto max-w-6xl px-6 pb-20">
-        <Reveal>
-          <h2 className="text-2xl font-semibold">Schedule Your Detail</h2>
-        </Reveal>
+        <Reveal><h2 className="text-2xl font-semibold">Schedule Your Detail</h2></Reveal>
         <form onSubmit={submitBooking} className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
           {/* Honeypot */}
           <input
@@ -866,58 +770,15 @@ export default function Home() {
             onChange={(e) => setBk((v) => ({ ...v, company: e.target.value }))}
             placeholder="Company"
           />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            placeholder="Full Name"
-            required
-            value={bk.name}
-            onChange={(e) => setBk((v) => ({ ...v, name: e.target.value }))}
-          />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            type="email"
-            placeholder="Email"
-            required
-            value={bk.email}
-            onChange={(e) => setBk((v) => ({ ...v, email: e.target.value }))}
-          />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            placeholder="Phone (SMS)"
-            value={bk.phone}
-            onChange={(e) => setBk((v) => ({ ...v, phone: e.target.value }))}
-          />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            placeholder="Vehicle (Make/Model/Year)"
-            value={bk.vehicle}
-            onChange={(e) => setBk((v) => ({ ...v, vehicle: e.target.value }))}
-          />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            placeholder="Selected Package"
-            value={bk.package}
-            onChange={(e) => setBk((v) => ({ ...v, package: e.target.value }))}
-          />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            type="date"
-            required
-            value={bk.date}
-            onChange={(e) => setBk((v) => ({ ...v, date: e.target.value }))}
-          />
-          <input
-            className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40"
-            type="time"
-            required
-            value={bk.time}
-            onChange={(e) => setBk((v) => ({ ...v, time: e.target.value }))}
-          />
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Full Name" required value={bk.name} onChange={e=>setBk(v=>({...v,name:e.target.value}))}/>
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" type="email" placeholder="Email" required value={bk.email} onChange={e=>setBk(v=>({...v,email:e.target.value}))}/>
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Phone (SMS)" value={bk.phone} onChange={e=>setBk(v=>({...v,phone:e.target.value}))}/>
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Vehicle (Make/Model/Year)" value={bk.vehicle} onChange={e=>setBk(v=>({...v,vehicle:e.target.value}))}/>
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Selected Package" value={bk.package} onChange={e=>setBk(v=>({...v,package:e.target.value}))}/>
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" type="date" required value={bk.date} onChange={e=>setBk(v=>({...v,date:e.target.value}))}/>
+          <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" type="time" required value={bk.time} onChange={e=>setBk(v=>({...v,time:e.target.value}))}/>
           <div className="md:col-span-2 flex items-center gap-4">
-            <button
-              disabled={bkBusy}
-              className="rounded-md px-5 py-2.5 text-sm font-medium border border-white hover:bg-white hover:text-black transition"
-            >
+            <button disabled={bkBusy} className="rounded-md px-5 py-2.5 text-sm font-medium border border-white hover:bg-white hover:text-black transition">
               {bkBusy ? "Sending…" : "Request Appointment"}
             </button>
             {bkOK && <span className="text-sm text-emerald-400">We’ll confirm by email/text.</span>}
