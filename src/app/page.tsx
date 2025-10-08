@@ -94,9 +94,8 @@ function Reveal({
 const heroSlides: string[][] = [
   ["/soap-sunset.jpeg"],
   ["/polish-black.jpeg"],
-   ["/soap-car.jpeg"],
+   ["/gold-wheels.jpeg"],
    ["/red-mustang.jpeg"],
-  ["/yellowtowel.jpeg"],
 ];
 
 function HeroSlideshow({
@@ -551,10 +550,7 @@ export default function Home() {
 
   /* Gallery – use JPEGs to keep consistent */
   const gallery = [
-    ["/soap-sunset.jpeg"],
-    ["/polish-black-portrait.jpeg"],
-    ["/hero-polish.jpeg"],
-    ["/wipe-blue-cloth.jpeg"],
+  
     ["/before-after-mats.jpeg"],
     ["/before-after-seat.jpeg"],
     ["/before-after-trunk.jpeg"],
