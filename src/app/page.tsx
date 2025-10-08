@@ -669,12 +669,12 @@ export default function Home() {
         <Reveal><h2 className="text-2xl font-semibold">Reviews</h2></Reveal>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
           {[
-            { q: "Interior looked brand new. Professional and punctual.", n: "Jordan P." },
-            { q: "Pet hair gone and glass crystal clear. Highly recommend.", n: "Melissa R." },
-            { q: "Black paint has depth again—polish made a huge difference.", n: "Andre S." },
-  { q: "They came right to my driveway and made my SUV spotless inside and out.", n: "Kayla B." },
-  { q: "Attention to detail was top-notch. The wax made my car look better than the dealership finish.", n: "Ryan C." },
-  { q: "Great communication and results. Will definitely schedule regular cleanings.", n: "Samantha T." },
+            { q: "Interior looked brand new. Professional and punctual.", n: "Michael Z." },
+            { q: "Pet hair gone and glass crystal clear. Highly recommend.", n: "Eileen C." },
+            { q: "Black paint has depth again—polish made a huge difference.", n: "Anthony L." },
+  { q: "They came right to my driveway and made my SUV spotless inside and out.", n: "Sandy C." },
+  { q: "Attention to detail was top-notch. The wax made my car look better than the dealership finish.", n: "Theodore L." },
+  { q: "Great communication and results. Will definitely schedule regular cleanings.", n: "Karen C." },
           ].map((t) => (
             <Reveal key={t.n} delay={0.04}>
               <figure className="rounded-xl border border-white/20 p-5">
