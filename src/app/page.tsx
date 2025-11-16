@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, useInView, AnimatePresence } from "framer-motion";
@@ -12,7 +14,11 @@ const PALETTE = {
   border: "border-white/15",
 };
 
-/* ---------------- Smart image with graceful fallbacks ---------------- */
+/* ---------------- Smart image with next/image + graceful fallbacks ----------------
+   - Wrapper gets your className (sets size & fit classes)
+   - Uses next/image (fill) for optimization
+   - Tries multiple sources; if one fails, advances to the next
+----------------------------------------------------------------------------- */
 function SmartImg({
   sources,
   alt,
@@ -23,10 +29,10 @@ function SmartImg({
   className?: string;
 }) {
   const [idx, setIdx] = useState(0);
-  const [failed, setFailed] = useState(false);
+  const [failedAll, setFailedAll] = useState(false);
   const src = sources[idx];
 
-  if (!src || failed) {
+  if (!src || failedAll) {
     return (
       <div
         className={
@@ -40,20 +46,35 @@ function SmartImg({
   }
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={() => {
-        if (idx < sources.length - 1) setIdx(idx + 1);
-        else setFailed(true);
-      }}
-    />
+    <div className={("relative " + (className || "")).trim()}>
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="100vw"
+        className={
+          (className || "").includes("object-contain")
+            ? "object-contain"
+            : "object-cover"
+        }
+        onError={() => {
+          if (idx < sources.length - 1) setIdx(idx + 1);
+          else setFailedAll(true);
+        }}
+        priority={false}
+      />
+    </div>
   );
 }
 
 /* ---------------- Small motion helper ---------------- */
-function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+function Reveal({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, amount: 0.18 });
   return (
@@ -66,6 +87,89 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
         {children}
       </motion.div>
     </div>
+  );
+}
+
+/* ---------------- HERO FADE SLIDESHOW (JPEGs only) ---------------- */
+const heroSlides: string[][] = [
+  ["/soap-sunset.jpeg"],
+  ["/polish-black.jpeg"],
+   ["/gold-wheels.jpeg"],
+   ["/red-mustang.jpeg"],
+];
+
+function HeroSlideshow({
+  onSelectPackage,
+}: {
+  onSelectPackage: (pkg: string) => void;
+}) {
+  const [i, setI] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setI((v) => (v + 1) % heroSlides.length), 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <section className="relative h-[92vh] w-full isolate overflow-hidden">
+      <AnimatePresence initial={false} mode="wait">
+        <motion.div
+          key={i}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
+          className="absolute inset-0"
+        >
+          <SmartImg
+            sources={heroSlides[i]}
+            alt="Detailing showcase"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="absolute inset-0 bg-black/45" />
+
+      <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col items-start justify-center px-6">
+        <h1 className="max-w-3xl text-4xl md:text-6xl font-extrabold tracking-tight leading-[0.95]">
+          VEHICLE DETAILING
+          <br /> IN MINNEAPOLIS
+        </h1>
+        <p className="mt-5 max-w-xl text-white/70">
+          Professional interior restoration, exterior detailing, and lasting
+          protection — delivered right to your driveway.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-4">
+          <a
+            href="#booking"
+            onClick={() => onSelectPackage("General Booking")}
+            className="rounded-md px-6 py-3 text-sm font-medium bg-white text-black ring-1 ring-inset ring-white/20 hover:opacity-90 transition"
+          >
+            Book Today
+          </a>
+          <a
+            href="#services"
+            className="rounded-md px-6 py-3 text-sm font-medium border border-white/30 hover:bg-white hover:text-black transition"
+          >
+            Explore Services
+          </a>
+        </div>
+      </div>
+
+      {/* simple progress dots (read-only) */}
+      <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2">
+        {heroSlides.map((_, idx) => (
+          <span
+            key={idx}
+            className={[
+              "h-2 w-2 rounded-full",
+              i === idx ? "bg-white" : "bg-white/40",
+            ].join(" ")}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -381,21 +485,22 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
    PAGE
    ========================================================= */
 export default function Home() {
-  /* Forms wired to Supabase */
-  const [inq, setInq] = useState({ name: "", email: "", phone: "", vehicle: "", message: "", company: "" }); // company = honeypot
+  // Inquiry form (with honeypot)
+  const [inq, setInq] = useState({ name: "", email: "", phone: "", vehicle: "", message: "", company: "" });
   const [inqBusy, setInqBusy] = useState(false);
   const [inqOK, setInqOK] = useState(false);
   const [inqErr, setInqErr] = useState<string | null>(null);
 
+  // Booking form (with honeypot)
   const [bk, setBk] = useState({
     name: "", email: "", phone: "", vehicle: "",
-    package: "Interior + Exterior", date: "", time: "", company: "", // honeypot
+    package: "Interior + Exterior", date: "", time: "", company: "",
   });
   const [bkBusy, setBkBusy] = useState(false);
   const [bkOK, setBkOK] = useState(false);
   const [bkErr, setBkErr] = useState<string | null>(null);
 
-  // Footer year after mount (avoid tiny hydration mismatches)
+  // Footer year after mount (avoid SSR hydration nits)
   const [year, setYear] = useState<string>("");
   useEffect(() => setYear(String(new Date().getFullYear())), []);
 
@@ -411,7 +516,7 @@ export default function Home() {
 
   async function submitInquiry(e: React.FormEvent) {
     e.preventDefault();
-    if (inq.company) return; // honeypot filled => drop silently
+    if (inq.company) return; // honeypot
     if (!validEmail(inq.email)) return setInqErr("Please enter a valid email.");
     setInqBusy(true); setInqErr(null);
     const payload = { name: inq.name, email: inq.email, phone: inq.phone, vehicle: inq.vehicle, message: inq.message };
@@ -435,36 +540,14 @@ export default function Home() {
     setBk({ name: "", email: "", phone: "", vehicle: "", package: "Interior + Exterior", date: "", time: "", company: "" });
   }
 
-  /* Hero slideshow */
-  const slides = [
-    ["/hero-polish.jpg", "/hero-polish.jpeg"],
-    ["/soap-sunset.jpg", "/soap-sunset.jpeg"],
-    ["/wipe-blue-cloth.jpg", "/wipe-blue-cloth.jpeg"],
-  ];
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % slides.length), 6000);
-    return () => clearInterval(t);
-  }, [slides.length]);
 
-  /* Posters */
-  const posters = [
-    { srcs: ["/referral-pricing.png"], alt: "Referral Program" },
-    { srcs: ["/ceramic-pricing.png"], alt: "Ceramic pricing" },
-    { srcs: ["/interior-pricing.png"], alt: "Interior pricing" },
-    { srcs: ["/full-pricing.png"], alt: "Full pricing" },
-  ];
-
-  /* Gallery */
+  /* Gallery – use JPEGs to keep consistent */
   const gallery = [
-    ["/soap-close.jpg", "/soap-close.jpeg"],
-    ["/interior-vs-exterior.jpg", "/interior-vs-exterior.jpeg"],
-    ["/polish-black-portrait.jpg", "/polish-black-portrait.jpeg"],
-    ["/wipe-blue-cloth.jpg", "/wipe-blue-cloth.jpeg"],
-    ["/before-after-mats.jpg", "/before-after-mats.jpeg"],
-    ["/before-after-seat.jpg", "/before-after-seat.jpeg"],
-    ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"],
-    ["/before-after-door.jpg", "/before-after-door.jpeg"],
+  
+    ["/before-after-mats.jpeg"],
+    ["/before-after-seat.jpeg"],
+    ["/before-after-trunk.jpeg"],
+    ["/before-after-door.jpeg"],
   ];
 
   return (
@@ -472,10 +555,14 @@ export default function Home() {
       {/* NAV */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/70 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-          <a href="/" className="flex items-center gap-3">
-            <SmartImg sources={["/logo-ac.png", "/logo-ac.jpg", "/logo-ac.jpeg"]} alt="AC Detailing & Cleaning" className="h-8 w-auto" />
+          <Link href="/" prefetch={false} className="flex items-center gap-3">
+            <SmartImg
+              sources={["/logo-ac.png", "/logo-ac.jpeg"]}
+              alt="AC Detailing & Cleaning"
+              className="h-8 w-[140px] object-contain"
+            />
             <span className="font-semibold tracking-tight">AC Detailing</span>
-          </a>
+          </Link>
           <nav className="hidden gap-8 text-sm md:flex">
             <a href="#services" className="hover:opacity-70">Services</a>
             <a href="#packages" className="hover:opacity-70">Packages</a>
@@ -489,40 +576,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* HERO (full image) */}
-      <section className="relative h-[92vh] w-full isolate overflow-hidden">
-        <AnimatePresence initial={false} mode="wait">
-          <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
-            <SmartImg
-              sources={slides[i]}
-              alt="Detailing showcase"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          </motion.div>
-        </AnimatePresence>
-        <div className="absolute inset-0 bg-black/45" />
-        <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col items-start justify-center px-6">
-          <h1 className="max-w-3xl text-4xl md:text-6xl font-extrabold tracking-tight leading-[0.95]">
-            VEHICLE DETAILING 
-            <br /> IN MINNEAPOLIS 
-          </h1>
-          <p className="mt-5 max-w-xl text-white/70">
-            Professional interior restoration, exterior detailing, and lasting protection — delivered right to your driveway.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href="#booking"
-              onClick={() => handleSelectPackage("General Booking")}
-              className="rounded-md px-6 py-3 text-sm font-medium bg-white text-black ring-1 ring-inset ring-white/20 hover:opacity-90 transition"
-            >
-              Book Today
-            </a>
-            <a href="#services" className="rounded-md px-6 py-3 text-sm font-medium border border-white/30 hover:bg-white hover:text-black transition">
-              Explore Services
-            </a>
-          </div>
-        </div>
-      </section>
+      {/* HERO */}
+      <HeroSlideshow onSelectPackage={handleSelectPackage} />
 
       {/* SERVICES */}
       <section id="services" className="mx-auto max-w-6xl px-6 py-16">
@@ -549,24 +604,6 @@ export default function Home() {
       {/* PRICING GUIDES (always open) */}
       <PricingGuidesSection onSelectPackage={handleSelectPackage} />
 
-      {/* POSTERS (big, swipeable) */}
-      <section id="pricing" className="px-0 py-16">
-        <Reveal><h2 className="mx-auto max-w-6xl px-6 text-2xl font-semibold">Pricing </h2></Reveal>
-        <div className="mt-8 overflow-x-auto snap-x snap-mandatory">
-          <div className="flex gap-6 px-6">
-            {posters.map((img) => (
-              <div
-                key={img.srcs[0]}
-                className="snap-center shrink-0 rounded-2xl border border-white/10 bg-white/5 backdrop-blur"
-                style={{ width: "min(92vw, 950px)" }}
-              >
-                <SmartImg sources={img.srcs} alt={img.alt} className="h-[86vh] w-full object-contain p-4" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CUSTOMER RESULTS */}
       <section id="results" className="py-20 bg-neutral-950">
         <div className="max-w-7xl mx-auto px-6">
@@ -576,10 +613,10 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {[
-              { srcs: ["/before-after-seat.jpg", "/before-after-seat.jpeg"], caption: "Interior Seat Restoration" },
-              { srcs: ["/before-after-mats.jpg", "/before-after-mats.jpeg"], caption: "Floor Mat Deep Clean" },
-              { srcs: ["/before-after-door.jpg", "/before-after-door.jpeg"], caption: "Door Panel Refresh" },
-              { srcs: ["/before-after-trunk.jpg", "/before-after-trunk.jpeg"], caption: "Full Trunk Cleanout" },
+              { srcs: ["/before-after-seat.jpeg"], caption: "Interior Seat Restoration" },
+              { srcs: ["/before-after-mats.jpeg"], caption: "Floor Mat Deep Clean" },
+              { srcs: ["/before-after-door.jpeg"], caption: "Door Panel Refresh" },
+              { srcs: ["/before-after-trunk.jpeg"], caption: "Full Trunk Cleanout" },
             ].map((card) => (
               <div key={card.caption} className="bg-neutral-900 rounded-2xl shadow-lg overflow-hidden border border-white/10">
                 <SmartImg sources={card.srcs} alt={card.caption} className="w-full h-64 object-cover" />
@@ -607,12 +644,12 @@ export default function Home() {
         <Reveal><h2 className="text-2xl font-semibold">Reviews</h2></Reveal>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
           {[
-            { q: "Interior looked brand new. Professional and punctual.", n: "Theo L." },
-            { q: "Pet hair gone and glass crystal clear. Highly recommend.", n: "Karen C." },
+            { q: "Interior looked brand new. Professional and punctual.", n: "Michael Z." },
+            { q: "Carpet looked brand new and glass was crystal clear. Highly recommend.", n: "Eileen C." },
             { q: "Black paint has depth again—polish made a huge difference.", n: "Anthony L." },
-       { q: "Interior looked brand new. Professional and punctual.", n: "Eileen C." },
-            { q: "Pet hair gone and glass crystal clear. Highly recommend.", n: "Sandy C." },
-            { q: "Black paint has depth again—polish made a huge difference.", n: "Michael Z." },
+  { q: "They came right to my driveway and made my SUV spotless inside and out.", n: "Sandy C." },
+  { q: "Attention to detail was top-notch. The wax made my car look better than the dealership finish.", n: "Theodore L." },
+  { q: "Great communication and results. Will definitely schedule regular cleanings.", n: "Karen C." },
           ].map((t) => (
             <Reveal key={t.n} delay={0.04}>
               <figure className="rounded-xl border border-white/20 p-5">
@@ -628,7 +665,7 @@ export default function Home() {
       <section id="contact" className="mx-auto max-w-6xl px-6 py-16">
         <Reveal><h2 className="text-2xl font-semibold">Get a Free Quote</h2></Reveal>
         <form onSubmit={submitInquiry} className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {/* Honeypot (hidden) */}
+          {/* Honeypot */}
           <input
             className="hidden"
             tabIndex={-1}
@@ -670,6 +707,7 @@ export default function Home() {
           <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Phone (SMS)" value={bk.phone} onChange={e=>setBk(v=>({...v,phone:e.target.value}))}/>
           <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Vehicle (Make/Model/Year)" value={bk.vehicle} onChange={e=>setBk(v=>({...v,vehicle:e.target.value}))}/>
           <input className="rounded-md border border-white/20 bg-black px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/40" placeholder="Selected Package" value={bk.package} onChange={e=>setBk(v=>({...v,package:e.target.value}))}/>
+          
           <div className="md:col-span-2 flex items-center gap-4">
             <button disabled={bkBusy} className="rounded-md px-5 py-2.5 text-sm font-medium border border-white hover:bg-white hover:text-black transition">
               {bkBusy ? "Sending…" : "Request Appointment"}
