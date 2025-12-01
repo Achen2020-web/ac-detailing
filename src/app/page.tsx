@@ -589,7 +589,11 @@ export default function Home() {
     if (!validEmail(inq.email)) return setInqErr("Please enter a valid email.");
     setInqBusy(true); setInqErr(null);
     const payload = { name: inq.name, email: inq.email, phone: inq.phone, vehicle: inq.vehicle, message: inq.message };
-    const { error } = await supabase.from("customer_inquiries").insert([payload]);
+const res = await fetch("/api/inquiry_alerts", {
+  method: "POST",
+  body: JSON.stringify(payload)
+});
+const { error } = await res.json();
     setInqBusy(false);
     if (error) return setInqErr(error.message);
     setInqOK(true);
