@@ -500,7 +500,56 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
             </div>
           </div>
         )}
-        {
+
+        {/* FLEET / DEALERSHIP */}
+        {tab === "fleet" && (
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-xl border border-white/10 p-5">
+              <h3 className="text-lg font-semibold tracking-wide">{fleet.subtitle}</h3>
+              <p className="text-sm text-neutral-300 mt-2">{fleet.description}</p>
+              <div className="mx-5 my-4 border-t border-white/10" />
+
+              <ul className="px-2 pb-4 space-y-2 text-sm text-neutral-300">
+                {fleet.includes.map((i) => (
+                  <li key={i} className="border-b border-white/10 pb-2 last:border-b-0">
+                    {i}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-xl border border-white/10 p-5">
+              <h3 className="text-lg font-semibold tracking-wide">Fleet Pricing</h3>
+              <div className="mx-5 my-4 border-t border-white/10" />
+
+              <ul className="px-2 pb-4">
+                {fleet.tiers.map((t) => (
+                  <li
+                    key={t.label}
+                    className="flex items-center justify-between border-b border-white/10 py-3 last:border-b-0 text-sm"
+                  >
+                    <span className="text-neutral-300">{t.label}</span>
+                    <span className="font-medium">
+                      {t.note} ${t.price}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <a
+                href="#booking"
+                onClick={() => onSelectPackage("Fleet / Dealership Contract")}
+                className="block rounded-b-xl bg-white/10 px-5 py-3 text-center text-sm font-semibold hover:bg-white hover:text-black transition"
+              >
+                CONTACT FOR CONTRACT
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 /* =========================================================
    PAGE
    ========================================================= */
