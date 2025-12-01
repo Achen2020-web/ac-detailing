@@ -347,10 +347,10 @@ function PackagesSection({ onSelectPackage }: { onSelectPackage: (pkg: string) =
 }
 
 /* =========================================================
-   PRICING GUIDES (always open)
-   ========================================================= */
+   PRICING GUIDES (with Dealership + Fleet)
+========================================================= */
 function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: string) => void }) {
-  type TabKey = "interior" | "ceramic";
+  type TabKey = "interior" | "ceramic" | "fleet";
   const [tab, setTab] = useState<TabKey>("interior");
 
   const interior = {
@@ -378,16 +378,37 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
     ],
   };
 
+  const fleet = {
+    subtitle: "DEALERSHIP & FLEET CONTRACTS",
+    description:
+      "Perfect for dealerships, commercial fleets, rideshare vehicles, work trucks, rental fleets, and delivery cars. Volume discounts available.",
+    basePrice: 80,
+    includes: [
+      "Exterior Wash + Wheels",
+      "Full Interior Vacuum",
+      "Dashboard + Console Wipe Down",
+      "Windows Inside & Out",
+      "Light Stain Removal",
+      "Optional Add-Ons (Shampoo, Wax, Steam, Polish)",
+    ],
+    tiers: [
+      { label: "5–10 Vehicles", note: "Starting at", price: 120 },
+      { label: "11–25 Vehicles", note: "Starting at", price: 100 },
+      { label: "26+ Vehicles", note: "Starting at", price: 80 },
+    ],
+  };
+
   return (
     <section id="price-guides" className="mx-auto max-w-6xl px-6 py-16">
       <h2 className="text-2xl font-semibold">Pricing Guides</h2>
 
       {/* Tabs */}
-      <div className="mt-6 grid grid-cols-2 gap-3 md:w-[520px]">
-        {([
+      <div className="mt-6 grid grid-cols-3 gap-3 md:w-[700px]">
+        {[
           { key: "interior" as TabKey, label: "INTERIOR" },
           { key: "ceramic" as TabKey, label: "CERAMIC COATING" },
-        ]).map((t) => {
+          { key: "fleet" as TabKey, label: "DEALERSHIP & FLEET" },
+        ].map((t) => {
           const active = tab === t.key;
           return (
             <button
@@ -408,7 +429,9 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
 
       {/* Always-open content */}
       <div className="mt-6 rounded-2xl border border-white/15 bg-black/60 backdrop-blur p-4 md:p-6">
-        {tab === "interior" ? (
+
+        {/* INTERIOR */}
+        {tab === "interior" && (
           <div className="grid gap-6 md:grid-cols-3">
             {interior.tiers.map((t) => (
               <div key={t.name} className="rounded-xl border border-white/10">
@@ -438,7 +461,10 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
               </div>
             ))}
           </div>
-        ) : (
+        )}
+
+        {/* CERAMIC COATING */}
+        {tab === "ceramic" && (
           <div className="grid gap-6 md:grid-cols-2">
             <div className="rounded-xl border border-white/10">
               <div className="px-5 pt-5 text-lg font-semibold tracking-wide">Pricing</div>
@@ -468,19 +494,13 @@ function PricingGuidesSection({ onSelectPackage }: { onSelectPackage: (pkg: stri
               <div className="mx-5 my-4 border-t border-white/10" />
               <ul className="px-5 pb-5 space-y-2 text-sm text-neutral-300">
                 {ceramic.includes.map((i) => (
-                  <li key={i} className="border-b border-white/10 pb-2 last:border-b-0">
-                    {i}
-                  </li>
+                  <li key={i} className="border-b border-white/10 pb-2 last:border-b-0">{i}</li>
                 ))}
               </ul>
             </div>
           </div>
         )}
-      </div>
-    </section>
-  );
-}
-
+        {
 /* =========================================================
    PAGE
    ========================================================= */
