@@ -621,6 +621,8 @@ const { error } = await res.json();
     ["/before-after-seat.jpeg"],
     ["/before-after-trunk.jpeg"],
     ["/before-after-door.jpeg"],
+    ["/Mold.removal.jpeg"],
+    ["/interior.jpeg"],
   ];
 
   return (
