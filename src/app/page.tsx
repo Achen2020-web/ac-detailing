@@ -613,9 +613,8 @@ const { error } = await res.json();
     setBk({ name: "", email: "", phone: "", vehicle: "", package: "Interior + Exterior", date: "", time: "", company: "" });
   }
 
-/* HERO (your existing HeroSlideshow goes here) */
-    <HeroSlideshow onSelectPackage={handleSelectPackage} />
- /* Gallery – use JPEGs to keep consistent */
+
+                                 /* Gallery – use JPEGs to keep consistent */
 const gallery = [
   ["/before-after-mats.jpeg"],
   ["/before-after-seat.jpeg"],
@@ -723,6 +722,8 @@ return (
       </AnimatePresence>
     </section>
 
+    {/* HERO (your existing HeroSlideshow goes here) */}
+    <HeroSlideshow onSelectPackage={handleSelectPackage} />
 
       {/* SERVICES */}
       <section id="services" className="mx-auto max-w-6xl px-6 py-16">
