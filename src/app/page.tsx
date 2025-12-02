@@ -690,6 +690,8 @@ const { error } = await res.json();
               { srcs: ["/before-after-mats.jpeg"], caption: "Floor Mat Deep Clean" },
               { srcs: ["/before-after-door.jpeg"], caption: "Door Panel Refresh" },
               { srcs: ["/before-after-trunk.jpeg"], caption: "Full Trunk Cleanout" },
+              { srcs: ["/interior.jpeg"], caption: "Interior Refresh" },
+              { srcs: ["/Mold-removal.jpeg"], caption: "Mold Removal" },
             ].map((card) => (
               <div key={card.caption} className="bg-neutral-900 rounded-2xl shadow-lg overflow-hidden border border-white/10">
                 <SmartImg sources={card.srcs} alt={card.caption} className="w-full h-64 object-cover" />
