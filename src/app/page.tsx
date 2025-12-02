@@ -614,116 +614,45 @@ const { error } = await res.json();
   }
 
 
-                                 /* Gallery – use JPEGs to keep consistent */
-const gallery = [
-  ["/before-after-mats.jpeg"],
-  ["/before-after-seat.jpeg"],
-  ["/before-after-trunk.jpeg"],
-  ["/before-after-door.jpeg"],
-  ["/Mold-removal.jpeg"],
-  ["/interior.jpeg"],
-];
+  /* Gallery – use JPEGs to keep consistent */
+  const gallery = [
+  
+    ["/before-after-mats.jpeg"],
+    ["/before-after-seat.jpeg"],
+    ["/before-after-trunk.jpeg"],
+    ["/before-after-door.jpeg"],
+    ["/Mold-removal.jpeg"],
+    ["/interior.jpeg"],
+  ];
 
-// Lightbox state (place this near other useState hooks)
-const [lightbox, setLightbox] = useState<string | null>(null);
+  return (
+    <main className={`${PALETTE.bg} ${PALETTE.text}`}>
+      {/* NAV */}
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/70 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+          <Link href="/" prefetch={false} className="flex items-center gap-3">
+            <SmartImg
+              sources={["/logo-ac.png", "/logo-ac.jpeg"]}
+              alt="AC Detailing & Cleaning"
+              className="h-8 w-[140px] object-contain"
+            />
+            <span className="font-semibold tracking-tight">AC Detailing</span>
+          </Link>
+          <nav className="hidden gap-8 text-sm md:flex">
+            <a href="#services" className="hover:opacity-70">Services</a>
+            <a href="#packages" className="hover:opacity-70">Packages</a>
+            <a href="#price-guides" className="hover:opacity-70">Price Guides</a>
+            <a href="#results" className="hover:opacity-70">Customer Results</a>
+            <a href="#gallery" className="hover:opacity-70">Gallery</a>
+            <a href="#reviews" className="hover:opacity-70">Reviews</a>
+            <a href="#contact" className="hover:opacity-70">Contact</a>
+          </nav>
+          <a href="#booking" className="rounded-md px-4 py-2 text-sm border border-white hover:bg-white hover:text-black transition">Book Now</a>
+        </div>
+      </header>
 
-useEffect(() => {
-  function onKey(e: KeyboardEvent) {
-    if (e.key === "Escape") setLightbox(null);
-  }
-  window.addEventListener("keydown", onKey);
-  return () => window.removeEventListener("keydown", onKey);
-}, []);
-
-return (
-  <main className={`${PALETTE.bg} ${PALETTE.text}`}>
-
-    {/* NAV */}
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-black/70 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-        <Link href="/" prefetch={false} className="flex items-center gap-3">
-          <SmartImg
-            sources={["/logo-ac.png", "/logo-ac.jpeg"]}
-            alt="AC Detailing & Cleaning"
-            className="h-8 w-[140px] object-contain"
-          />
-          <span className="font-semibold tracking-tight">AC Detailing</span>
-        </Link>
-
-        <nav className="hidden gap-8 text-sm md:flex">
-          <a href="#services" className="hover:opacity-70">Services</a>
-          <a href="#packages" className="hover:opacity-70">Packages</a>
-          <a href="#price-guides" className="hover:opacity-70">Price Guides</a>
-          <a href="#results" className="hover:opacity-70">Customer Results</a>
-          <a href="#gallery" className="hover:opacity-70">Gallery</a>
-          <a href="#reviews" className="hover:opacity-70">Reviews</a>
-          <a href="#contact" className="hover:opacity-70">Contact</a>
-        </nav>
-
-        <a href="#booking" className="rounded-md px-4 py-2 text-sm border border-white hover:bg-white hover:text-black transition">
-          Book Now
-        </a>
-      </div>
-    </header>
-
-    {/* ====== FULL-SIZE CLICKABLE GALLERY BEFORE HERO ====== */}
-    <section id="gallery" className="mx-auto max-w-6xl px-6 py-12">
-      <Reveal><h2 className="text-2xl font-semibold">Gallery</h2></Reveal>
-
-      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {gallery.map((srcs) => (
-          <Reveal key={srcs[0]} delay={0.04}>
-            <button
-              onClick={() => setLightbox(srcs[0])}
-              className="block w-full"
-            >
-              <SmartImg
-                sources={srcs}
-                alt=""
-                className="h-40 w-full rounded-lg object-cover md:h-48 hover:opacity-80 transition"
-              />
-            </button>
-          </Reveal>
-        ))}
-      </div>
-
-      {/* LIGHTBOX OVERLAY */}
-      <AnimatePresence>
-        {lightbox && (
-          <motion.div
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setLightbox(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="relative max-w-5xl w-full max-h-[90vh]"
-            >
-              <SmartImg
-                sources={[lightbox]}
-                alt="Expanded view"
-                className="w-full h-full object-contain rounded-lg"
-              />
-
-              {/* Close button */}
-              <button
-                onClick={() => setLightbox(null)}
-                className="absolute top-3 right-3 text-white text-lg bg-black/40 rounded-full px-3 py-1 hover:bg-black/70 transition"
-              >
-                Close
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </section>
-
-    {/* HERO (your existing HeroSlideshow goes here) */}
-    <HeroSlideshow onSelectPackage={handleSelectPackage} />
+      {/* HERO */}
+      <HeroSlideshow onSelectPackage={handleSelectPackage} />
 
       {/* SERVICES */}
       <section id="services" className="mx-auto max-w-6xl px-6 py-16">
