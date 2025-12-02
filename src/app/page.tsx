@@ -95,7 +95,7 @@ const heroSlides: string[][] = [
   ["/soap-sunset.jpeg"],
   ["/polish-black.jpeg"],
    ["/gold-wheels.jpeg"],
-   ["/red-mustang.jpeg"],
+   ["/Red-Light.jpeg"],
 ];
 
 function HeroSlideshow({
